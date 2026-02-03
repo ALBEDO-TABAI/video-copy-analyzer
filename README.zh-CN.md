@@ -2,6 +2,15 @@
 
 [English](README.md) | 中文文档
 
+<div align="center">
+
+**🤖 Claude Skill** | AI 驱动的视频分析工具
+
+[![Claude 4.5 Opus](https://img.shields.io/badge/测试环境-Claude%204.5%20Opus-blue)](https://claude.ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</div>
+
 > 🎬 一站式视频内容提取与文案分析工具。下载视频、Whisper 语音转录、三维度 AI 框架分析文案。
 
 ## ✨ 功能特性
@@ -85,10 +94,18 @@ video-copy-analyzer/
 | `{视频ID}_文字稿.md` | 校正后文字稿 |
 | `{视频ID}_分析报告.md` | 三维度分析报告 |
 
-## 🎯 推荐环境
+## 🎯 支持环境
 
-- **Antigravity** + Gemini 3 Pro
-- **Cursor** + Claude 4.5 Opus
+这是一个 **Claude Skill**，可在以下 AI 编程助手中使用：
+
+| 环境 | 模型 | 状态 |
+|------|------|------|
+| **Antigravity** | Gemini 3 Pro | ✅ 支持 |
+| **Cursor** | Claude 4.5 Opus | ✅ **已测试，推荐** |
+| **Claude Code** | Claude 4.5 Opus | ✅ 支持 |
+| **Windsurf** | 任意 Claude 模型 | ✅ 支持 |
+
+> 💡 **最佳效果**：在 **Claude 4.5 Opus** 下测试，转录校正和三维度分析效果理想。
 
 ## 📝 许可证
 

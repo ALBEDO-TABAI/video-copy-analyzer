@@ -2,6 +2,15 @@
 
 [中文文档](README.zh-CN.md) | English
 
+<div align="center">
+
+**🤖 Claude Skill** | AI-Powered Video Analysis
+
+[![Claude 4.5 Opus](https://img.shields.io/badge/Tested%20on-Claude%204.5%20Opus-blue)](https://claude.ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</div>
+
 > 🎬 One-stop video content extraction and copywriting analysis tool. Download videos, transcribe with Whisper, and analyze scripts using three AI frameworks.
 
 ## ✨ Features
@@ -85,10 +94,18 @@ After analysis, you'll receive:
 | `{video_id}_transcript.md` | Corrected transcript |
 | `{video_id}_analysis.md` | Three-dimensional analysis report |
 
-## 🎯 Recommended Environment
+## 🎯 Supported Environments
 
-- **Antigravity** with Gemini 3 Pro
-- **Cursor** with Claude 4.5 Opus
+This is a **Claude Skill** that works with AI coding assistants:
+
+| Environment | Model | Status |
+|-------------|-------|--------|
+| **Antigravity** | Gemini 3 Pro | ✅ Supported |
+| **Cursor** | Claude 4.5 Opus | ✅ **Tested & Recommended** |
+| **Claude Code** | Claude 4.5 Opus | ✅ Supported |
+| **Windsurf** | Any Claude model | ✅ Supported |
+
+> 💡 **Best Performance**: Tested with **Claude 4.5 Opus**, achieving optimal results in transcription correction and three-dimensional analysis.
 
 ## 📝 License
 
