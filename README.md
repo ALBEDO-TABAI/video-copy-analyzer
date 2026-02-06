@@ -17,7 +17,7 @@
 
 | Stage | Function | Description |
 |-------|----------|-------------|
-| 1️⃣ | **Video Download** | Download from Bilibili/YouTube using yt-dlp |
+| 1️⃣ | **Video Download** | Download from Bilibili/YouTube/Douyin (yt-dlp + custom downloader) |
 | 2️⃣ | **Smart Subtitle Extraction** | Three-tier priority: Embedded → OCR (RapidOCR) → ASR (FunASR/Whisper) |
 | 3️⃣ | **Smart Correction** | Context-based auto-correction of transcription errors |
 | 4️⃣ | **Three-Dimensional Analysis** | TextContent + Viral + Brainstorming |
@@ -44,6 +44,9 @@ pip install rapidocr-onnxruntime
 
 # 6. Whisper (Alternative for English/multilingual)
 pip install openai-whisper
+
+# 7. requests (for Douyin download)
+pip install requests
 ```
 
 ### Usage
@@ -120,6 +123,7 @@ Output SRT Subtitles
 video-copy-analyzer/
 ├── SKILL.md                          # Core skill instructions
 ├── scripts/
+│   ├── download_douyin.py            # Douyin video downloader (watermark-free)
 │   ├── extract_subtitle_funasr.py    # Smart subtitle extraction (FunASR + RapidOCR)
 │   ├── extract_subtitle.py           # Whisper-based extraction
 │   ├── transcribe_audio.py           # Audio transcription script

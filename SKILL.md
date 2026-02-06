@@ -1,7 +1,7 @@
 ---
 name: video-copy-analyzer
 description: >
-  视频文案分析一站式工具。下载在线视频（B站/YouTube等）、使用FunASR Nano进行中文语音转录、
+  视频文案分析一站式工具。下载在线视频（B站/YouTube/抖音等）、使用FunASR Nano进行中文语音转录、
   自动校正文稿、并进行三维度综合分析（TextContent/Viral/Brainstorming）。
   使用场景：当用户需要分析短视频文案、提取视频内容、学习爆款文案技巧时。
   关键词：视频分析、文案分析、语音转文字、FunASR、Whisper、爆款分析、视频下载
@@ -9,7 +9,7 @@ description: >
 
 # 视频文案分析工具
 
-一站式视频内容提取与文案分析，支持 B站、YouTube 等平台。
+一站式视频内容提取与文案分析，支持 B站、YouTube、抖音 等平台。
 
 ## 首次使用设置
 
@@ -42,12 +42,15 @@ python -c "from rapidocr_onnxruntime import RapidOCR; print('OK')"
 
 # 5. FunASR (中文语音转录，推荐)
 python -c "from funasr import AutoModel; print('OK')"
+
+# 6. requests (用于抖音下载)
+python -c "import requests; print('OK')"
 ```
 
 **安装命令（如缺失）**：
 ```bash
 # 基础依赖
-pip install yt-dlp pysrt python-dotenv
+pip install yt-dlp pysrt python-dotenv requests
 
 # FunASR (中文语音转录，轻量且效果好)
 pip install funasr modelscope
@@ -64,13 +67,48 @@ pip install openai-whisper
 ### 阶段 1: 下载视频
 
 1. 获取用户视频 URL 和输出目录
-2. 使用 yt-dlp 下载视频：
-   ```bash
-   yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" \
-     --merge-output-format mp4 \
-     -o "<output_dir>/%(id)s.%(ext)s" \
-     "<video_url>"
-   ```
+2. **判断视频平台**：
+   - **抖音链接**（douyin.com 或 v.douyin.com）：使用专用脚本下载
+   - **其他平台**（B站、YouTube等）：使用 yt-dlp 下载
+
+#### 抖音视频下载
+
+对于抖音链接，使用 `scripts/download_douyin.py`：
+
+```bash
+python scripts/download_douyin.py "<抖音链接>" "<输出路径>"
+```
+
+**支持的抖音链接格式**：
+- 短链接：`https://v.douyin.com/xxxxx`
+- 长链接：`https://www.douyin.com/video/xxxxx`
+- 精选页：`https://www.douyin.com/jingxuan?modal_id=xxxxx`
+- 分享链接：`https://m.douyin.com/share/video/xxxxx`
+
+**下载流程**：
+```
+抖音链接
+    ↓
+[Mobile UA 访问] ──→ 获取重定向后页面
+    ↓
+[提取 RENDER_DATA] ──→ 解析视频元数据
+    ↓
+[提取 play_addr] ──→ 获取无水印视频URL
+    ↓
+[下载视频] ──→ 保存到指定路径
+```
+
+#### 其他平台下载（yt-dlp）
+
+对于 B站、YouTube 等平台：
+
+```bash
+yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" \
+  --merge-output-format mp4 \
+  -o "<output_dir>/%(id)s.%(ext)s" \
+  "<video_url>"
+```
+
 3. 记录视频文件路径
 
 ### 阶段 2: 智能字幕提取
@@ -219,5 +257,8 @@ python scripts/transcribe_audio.py <视频路径> <输出SRT路径> [模型] [�
 
 ## 参考文件
 
-- [transcribe_audio.py](scripts/transcribe_audio.py): Whisper 转录脚本
+- [download_douyin.py](scripts/download_douyin.py): 抖音视频下载脚本
+- [extract_subtitle_funasr.py](scripts/extract_subtitle_funasr.py): 智能字幕提取脚本（FunASR + RapidOCR）
+- [extract_subtitle.py](scripts/extract_subtitle.py): 字幕提取脚本（Whisper）
+- [transcribe_audio.py](scripts/transcribe_audio.py): 音频转录脚本
 - [analysis-frameworks.md](references/analysis-frameworks.md): 三个分析框架详解

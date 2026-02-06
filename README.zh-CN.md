@@ -17,7 +17,7 @@
 
 | 阶段 | 功能 | 说明 |
 |------|------|------|
-| 1️⃣ | **视频下载** | 使用 yt-dlp 下载 B站/YouTube 视频 |
+| 1️⃣ | **视频下载** | 支持 B站/YouTube/抖音（yt-dlp + 专用下载器） |
 | 2️⃣ | **智能字幕提取** | 三层优先级：内嵌字幕 → OCR识别 → 语音转录 |
 | 3️⃣ | **智能校正** | 基于上下文自动校正转录错误 |
 | 4️⃣ | **三维度分析** | TextContent + Viral + Brainstorming |
@@ -44,6 +44,9 @@ pip install rapidocr-onnxruntime
 
 # 6. Whisper（英文/多语言备选方案）
 pip install openai-whisper
+
+# 7. requests（抖音下载需要）
+pip install requests
 ```
 
 ### 使用方法
@@ -120,6 +123,7 @@ Skill 会自动选择最佳提取方案：
 video-copy-analyzer/
 ├── SKILL.md                          # 核心技能说明
 ├── scripts/
+│   ├── download_douyin.py            # 抖音视频下载（无水印）
 │   ├── extract_subtitle_funasr.py    # 智能字幕提取（FunASR + RapidOCR）
 │   ├── extract_subtitle.py           # 基于 Whisper 的提取
 │   ├── transcribe_audio.py           # 音频转录脚本
