@@ -11,14 +11,14 @@
 
 </div>
 
-> 🎬 One-stop video content extraction and copywriting analysis tool. Download videos, transcribe with Whisper, and analyze scripts using three AI frameworks.
+> 🎬 One-stop video content extraction and copywriting analysis tool. Download videos, smart subtitle extraction (embedded/burned/audio), and analyze scripts using three AI frameworks.
 
 ## ✨ Features
 
 | Stage | Function | Description |
 |-------|----------|-------------|
 | 1️⃣ | **Video Download** | Download from Bilibili/YouTube using yt-dlp |
-| 2️⃣ | **Whisper Transcription** | Speech-to-text using OpenAI Whisper |
+| 2️⃣ | **Smart Subtitle Extraction** | Three-tier priority: Embedded → OCR (RapidOCR) → ASR (FunASR/Whisper) |
 | 3️⃣ | **Smart Correction** | Context-based auto-correction of transcription errors |
 | 4️⃣ | **Three-Dimensional Analysis** | TextContent + Viral + Brainstorming |
 
@@ -27,11 +27,23 @@
 ### Prerequisites
 
 ```bash
-# Install dependencies
-pip install yt-dlp pysrt python-dotenv openai-whisper
+# 1. yt-dlp (video downloader)
+pip install yt-dlp
 
-# FFmpeg must be installed and in PATH
+# 2. FFmpeg (must be installed and in PATH)
 ffmpeg -version
+
+# 3. Python dependencies
+pip install pysrt python-dotenv
+
+# 4. FunASR (Recommended for Chinese, lightweight & accurate)
+pip install funasr modelscope
+
+# 5. RapidOCR (ONNX lightweight, for burned subtitle detection)
+pip install rapidocr-onnxruntime
+
+# 6. Whisper (Alternative for English/multilingual)
+pip install openai-whisper
 ```
 
 ### Usage
@@ -39,14 +51,53 @@ ffmpeg -version
 This is a **Claude Skill** designed for AI agents. Install it in your `.agent/skills/` directory:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/video-copy-analyzer.git .agent/skills/video-copy-analyzer
+git clone https://github.com/ALBEDO-TABAI/video-copy-analyzer.git .agent/skills/video-copy-analyzer
 ```
 
 Then use it with Claude:
 
 > "Analyze this video: https://www.bilibili.com/video/BV1xxxxx"
 
-## 📊 Three-Dimensional Analysis Framework
+## 🎯 Smart Subtitle Extraction (3-Tier Priority)
+
+The skill automatically selects the best extraction method:
+
+```
+Video Input
+    ↓
+[1️⃣ Embedded Subtitle] ──→ Detected ──→ Direct Extract (Highest Accuracy)
+    ↓ Not detected
+[2️⃣ Burned Subtitle OCR] ──→ RapidOCR Frame Sampling ──→ Detected ──→ Full Video OCR
+    ↓ Not detected
+[3️⃣ Audio Transcription] ──→ FunASR (Chinese optimized) / Whisper (Multilingual)
+    ↓
+Output SRT Subtitles
+```
+
+### Extraction Methods Comparison
+
+| Tier | Method | Use Case | Accuracy | Speed |
+|------|--------|----------|----------|-------|
+| **L1** | Embedded Extract | Video has subtitle stream | ⭐⭐⭐⭐⭐ | ⚡ Fastest |
+| **L2** | RapidOCR | Subtitles burned into video | ⭐⭐⭐⭐ | 🚀 Fast |
+| **L3** | FunASR Nano | Chinese audio transcription | ⭐⭐⭐⭐ | � Medium |
+| **L3** | Whisper | English/multilingual audio | ⭐⭐⭐ | 🐢 Medium |
+
+### Tech Stack
+
+- **RapidOCR (ONNX)**: Lightweight OCR for burned subtitle detection
+  - 🚀 Lightweight: ONNX Runtime, no GPU required
+  - 🎯 Cross-platform: Windows/Linux/Mac
+  - 📦 Easy deploy: Single pip install
+  - ✨ High accuracy: Based on PaddleOCR
+
+- **FunASR Nano**: Alibaba open-source Chinese ASR model
+  - 🚀 Lightweight: ~100MB vs Whisper Large ~1.5GB
+  - 🎯 Chinese optimized: Better than Whisper for Chinese
+  - ⏱️ Timestamp: Word-level timestamps
+  - 💨 Fast: Runs well on CPU
+
+## �📊 Three-Dimensional Analysis Framework
 
 ### 1. TextContent Analysis
 - Narrative structure breakdown
@@ -67,12 +118,14 @@ Then use it with Claude:
 
 ```
 video-copy-analyzer/
-├── SKILL.md                    # Core skill instructions
+├── SKILL.md                          # Core skill instructions
 ├── scripts/
-│   ├── transcribe_audio.py     # Whisper transcription script
-│   └── check_environment.py    # Environment verification
+│   ├── extract_subtitle_funasr.py    # Smart subtitle extraction (FunASR + RapidOCR)
+│   ├── extract_subtitle.py           # Whisper-based extraction
+│   ├── transcribe_audio.py           # Audio transcription script
+│   └── check_environment.py          # Environment verification
 └── references/
-    └── analysis-frameworks.md  # Analysis framework details
+    └── analysis-frameworks.md        # Analysis framework details
 ```
 
 ## 🔧 Configuration
@@ -91,8 +144,8 @@ After analysis, you'll receive:
 |------|---------|
 | `{video_id}.mp4` | Original video |
 | `{video_id}.srt` | Raw subtitles |
-| `{video_id}_transcript.md` | Corrected transcript |
-| `{video_id}_analysis.md` | Three-dimensional analysis report |
+| `{video_id}_transcript.md` / `{video_id}_文字稿.md` | Corrected transcript |
+| `{video_id}_analysis.md` / `{video_id}_分析报告.md` | Three-dimensional analysis report |
 
 ## 🎯 Supported Environments
 
@@ -104,6 +157,7 @@ This is a **Claude Skill** that works with AI coding assistants:
 | **Cursor** | Claude 4.5 Opus | ✅ **Tested & Recommended** |
 | **Claude Code** | Claude 4.5 Opus | ✅ Supported |
 | **Windsurf** | Any Claude model | ✅ Supported |
+| **Trae** | Claude 3.5/4 | ✅ Supported |
 
 > 💡 **Best Performance**: Tested with **Claude 4.5 Opus**, achieving optimal results in transcription correction and three-dimensional analysis.
 

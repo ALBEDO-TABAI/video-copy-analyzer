@@ -1,10 +1,10 @@
 ---
 name: video-copy-analyzer
 description: >
-  视频文案分析一站式工具。下载在线视频（B站/YouTube等）、使用Whisper转录语音为文字稿、
+  视频文案分析一站式工具。下载在线视频（B站/YouTube等）、使用FunASR Nano进行中文语音转录、
   自动校正文稿、并进行三维度综合分析（TextContent/Viral/Brainstorming）。
   使用场景：当用户需要分析短视频文案、提取视频内容、学习爆款文案技巧时。
-  关键词：视频分析、文案分析、语音转文字、Whisper、爆款分析、视频下载
+  关键词：视频分析、文案分析、语音转文字、FunASR、Whisper、爆款分析、视频下载
 ---
 
 # 视频文案分析工具
@@ -35,12 +35,28 @@ yt-dlp --version
 ffmpeg -version
 
 # 3. Python 依赖
-python -c "import pysrt; from dotenv import load_dotenv; import whisper; print('OK')"
+python -c "import pysrt; from dotenv import load_dotenv; print('OK')"
+
+# 4. RapidOCR (用于烧录字幕识别，ONNX 轻量版)
+python -c "from rapidocr_onnxruntime import RapidOCR; print('OK')"
+
+# 5. FunASR (中文语音转录，推荐)
+python -c "from funasr import AutoModel; print('OK')"
 ```
 
 **安装命令（如缺失）**：
 ```bash
-pip install yt-dlp pysrt python-dotenv openai-whisper
+# 基础依赖
+pip install yt-dlp pysrt python-dotenv
+
+# FunASR (中文语音转录，轻量且效果好)
+pip install funasr modelscope
+
+# RapidOCR (ONNX 轻量版，用于烧录字幕识别)
+pip install rapidocr-onnxruntime
+
+# Whisper (备选方案)
+pip install openai-whisper
 ```
 
 ## 工作流程（4 阶段）
@@ -57,20 +73,61 @@ pip install yt-dlp pysrt python-dotenv openai-whisper
    ```
 3. 记录视频文件路径
 
-### 阶段 2: Whisper 转录
+### 阶段 2: 智能字幕提取
 
-使用 scripts/transcribe_audio.py 进行语音转录：
+使用 scripts/extract_subtitle_funasr.py 进行智能字幕提取，自动选择最佳方案：
 
 ```bash
-python scripts/transcribe_audio.py <video_path> <output_srt> [model] [language] [device]
+python scripts/extract_subtitle_funasr.py <视频路径> <输出SRT路径>
 ```
 
-参数说明：
-- model: tiny/base/small/medium/large（默认 medium）
-- language: zh/en/auto（默认 auto）
-- device: cuda/cpu（默认 cuda，不可用时自动回退）
+**智能提取流程（三层优先级）**：
 
-输出：SRT 格式字幕文件
+```
+视频输入
+    ↓
+[1️⃣ 内嵌字幕检测] ──→ 检测到字幕流 ──→ 直接提取（准确度最高）
+    ↓ 未检测到
+[2️⃣ 烧录字幕检测] ──→ 采样帧 OCR 识别 ──→ 检测到文字 ──→ 全视频 OCR 提取
+    ↓ 未检测到
+[3️⃣ FunASR 语音转录] ──→ 中文优化转录（效果优于 Whisper）
+    ↓
+输出 SRT 字幕
+```
+
+**三层提取策略详解**：
+
+| 层级 | 方法 | 适用场景 | 准确度 | 速度 |
+|------|------|---------|--------|------|
+| **L1** | 内嵌字幕提取 | 视频自带字幕流 | ⭐⭐⭐⭐⭐ | ⚡ 极快 |
+| **L2** | RapidOCR 烧录字幕识别 | 字幕烧录在画面中 | ⭐⭐⭐⭐ | 🚀 快 |
+| **L3** | FunASR Nano 语音转录 | 无字幕，纯语音 | ⭐⭐⭐ | 🐢 中等 |
+
+**技术栈说明**：
+
+- **RapidOCR (ONNX)**: 用于检测和提取烧录在视频画面中的字幕
+  - 🚀 轻量级：ONNX Runtime 推理，无需 GPU
+  - 🎯 跨平台：Windows/Linux/Mac 均支持
+  - 📦 易部署：单 pip 安装，无复杂依赖
+  - ✨ 高精度：基于 PaddleOCR 模型优化
+
+- **FunASR Nano**: 阿里开源中文语音识别模型
+  - 🚀 轻量级：~100MB vs Whisper Large ~1.5GB
+  - 🎯 中文优化：针对中文语音专门训练，效果优于 Whisper
+  - ⏱️ 时间戳：支持字级别时间戳
+  - 💨 速度快：CPU 上也能快速运行
+
+**备选方案**：
+
+如需使用 Whisper（英文内容推荐）：
+```bash
+python scripts/extract_subtitle.py <视频路径> <输出SRT路径>
+```
+
+如需手动控制，可使用原 transcribe_audio.py：
+```bash
+python scripts/transcribe_audio.py <视频路径> <输出SRT路径> [模型] [语言] [设备]
+```
 
 ### 阶段 3: 文稿校正
 
