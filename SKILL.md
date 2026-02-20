@@ -1,64 +1,15 @@
 ---
 name: video-copy-analyzer
 description: >
-  视频文案分析一站式工具。下载在线视频（B站/YouTube/抖音等）、使用FunASR进行高速中文语音转录、
+  视频文案分析一站式工具。下载在线视频（B站/YouTube/抖音等）、使用FunASR Nano进行中文语音转录、
   自动校正文稿、并进行三维度综合分析（TextContent/Viral/Brainstorming）。
   使用场景：当用户需要分析短视频文案、提取视频内容、学习爆款文案技巧时。
-  关键词：视频分析、文案分析、语音转文字、FunASR、爆款分析、视频下载
+  关键词：视频分析、文案分析、语音转文字、FunASR、Whisper、爆款分析、视频下载
 ---
 
 # 视频文案分析工具
 
 一站式视频内容提取与文案分析，支持 B站、YouTube、抖音 等平台。
-
-## 安装部署
-
-### 系统要求
-
-- Python 3.9+
-- FFmpeg（用于音视频处理）
-- 约 3GB 磁盘空间（FunASR 模型缓存）
-
-### 一键安装
-
-```bash
-# 1. 基础工具
-brew install ffmpeg  # macOS
-pip install yt-dlp requests pysrt python-dotenv
-
-# 2. FunASR（核心 ASR 引擎，中文语音转录）
-pip install funasr modelscope torch torchaudio
-
-# 3. RapidOCR（烧录字幕识别，可选）
-pip install rapidocr-onnxruntime
-```
-
-### ⚠️ FunASR 首次运行注意事项
-
-FunASR 首次运行时会**自动下载约 2-3GB 模型文件**到 `~/.cache/modelscope/`：
-
-| 模型 | 大小 | 用途 |
-|------|------|------|
-| paraformer-zh | ~1.05GB | 中文语音识别（ASR） |
-| fsmn-vad | ~20MB | 语音活动检测（长音频分段） |
-| ct-punc | ~1GB | 标点恢复 |
-
-- **首次下载可能需要 1-5 分钟**（取决于网速），期间看起来像是卡住，请耐心等待
-- 下载完成后会缓存到本地，后续运行秒级加载
-- 如果下载失败，可手动从 ModelScope 下载模型放到 `~/.cache/modelscope/hub/models/iic/` 目录
-
-### 环境验证
-
-```bash
-# 验证所有依赖
-python scripts/check_environment.py
-
-# 或手动检查关键组件
-yt-dlp --version
-ffmpeg -version
-python -c "from funasr import AutoModel; print('FunASR OK')"
-python -c "from rapidocr_onnxruntime import RapidOCR; print('RapidOCR OK')"
-```
 
 ## 首次使用设置
 
@@ -71,6 +22,45 @@ python -c "from rapidocr_onnxruntime import RapidOCR; print('RapidOCR OK')"
 > C. 指定一个固定目录：[请输入路径]"
 
 保存用户选择供后续使用。
+
+## 依赖环境检测
+
+运行前检测以下依赖，如缺失则提示安装：
+
+```bash
+# 1. yt-dlp
+yt-dlp --version
+
+# 2. FFmpeg
+ffmpeg -version
+
+# 3. Python 依赖
+python -c "import pysrt; from dotenv import load_dotenv; print('OK')"
+
+# 4. RapidOCR (用于烧录字幕识别，ONNX 轻量版)
+python -c "from rapidocr_onnxruntime import RapidOCR; print('OK')"
+
+# 5. FunASR (中文语音转录，推荐)
+python -c "from funasr import AutoModel; print('OK')"
+
+# 6. requests (用于抖音下载)
+python -c "import requests; print('OK')"
+```
+
+**安装命令（如缺失）**：
+```bash
+# 基础依赖
+pip install yt-dlp pysrt python-dotenv requests
+
+# FunASR (中文语音转录，轻量且效果好)
+pip install funasr modelscope
+
+# RapidOCR (ONNX 轻量版，用于烧录字幕识别)
+pip install rapidocr-onnxruntime
+
+# Whisper (备选方案)
+pip install openai-whisper
+```
 
 ## 工作流程（4 阶段）
 
@@ -95,6 +85,19 @@ python scripts/download_douyin.py "<抖音链接>" "<输出路径>"
 - 精选页：`https://www.douyin.com/jingxuan?modal_id=xxxxx`
 - 分享链接：`https://m.douyin.com/share/video/xxxxx`
 
+**下载流程**：
+```
+抖音链接
+    ↓
+[Mobile UA 访问] ──→ 获取重定向后页面
+    ↓
+[提取 RENDER_DATA] ──→ 解析视频元数据
+    ↓
+[提取 play_addr] ──→ 获取无水印视频URL
+    ↓
+[下载视频] ──→ 保存到指定路径
+```
+
 #### 其他平台下载（yt-dlp）
 
 对于 B站、YouTube 等平台：
@@ -110,7 +113,7 @@ yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" \
 
 ### 阶段 2: 智能字幕提取
 
-使用 `scripts/extract_subtitle_funasr.py` 进行智能字幕提取，自动选择最佳方案：
+使用 scripts/extract_subtitle_funasr.py 进行智能字幕提取，自动选择最佳方案：
 
 ```bash
 python scripts/extract_subtitle_funasr.py <视频路径> <输出SRT路径>
@@ -123,9 +126,9 @@ python scripts/extract_subtitle_funasr.py <视频路径> <输出SRT路径>
     ↓
 [1️⃣ 内嵌字幕检测] ──→ 检测到字幕流 ──→ 直接提取（准确度最高）
     ↓ 未检测到
-[2️⃣ 烧录字幕检测] ──→ RapidOCR 采样帧识别 ──→ 检测到文字 ──→ 全视频 OCR 提取
+[2️⃣ 烧录字幕检测] ──→ 采样帧 OCR 识别 ──→ 检测到文字 ──→ 全视频 OCR 提取
     ↓ 未检测到
-[3️⃣ FunASR 语音转录] ──→ 高速中文转录（10倍 Whisper 速度）
+[3️⃣ FunASR 语音转录] ──→ 中文优化转录（效果优于 Whisper）
     ↓
 输出 SRT 字幕
 ```
@@ -136,41 +139,33 @@ python scripts/extract_subtitle_funasr.py <视频路径> <输出SRT路径>
 |------|------|---------|--------|------|
 | **L1** | 内嵌字幕提取 | 视频自带字幕流 | ⭐⭐⭐⭐⭐ | ⚡ 极快 |
 | **L2** | RapidOCR 烧录字幕识别 | 字幕烧录在画面中 | ⭐⭐⭐⭐ | 🚀 快 |
-| **L3** | FunASR 语音转录 | 无字幕，纯语音 | ⭐⭐⭐⭐ | ⚡ 极快 |
+| **L3** | FunASR Nano 语音转录 | 无字幕，纯语音 | ⭐⭐⭐ | 🐢 中等 |
 
-### FunASR 技术细节
+**技术栈说明**：
 
-本 skill 使用 FunASR 的 **Paraformer** 系列模型组合：
+- **RapidOCR (ONNX)**: 用于检测和提取烧录在视频画面中的字幕
+  - 🚀 轻量级：ONNX Runtime 推理，无需 GPU
+  - 🎯 跨平台：Windows/Linux/Mac 均支持
+  - 📦 易部署：单 pip 安装，无复杂依赖
+  - ✨ 高精度：基于 PaddleOCR 模型优化
 
-```python
-from funasr import AutoModel
+- **FunASR Nano**: 阿里开源中文语音识别模型
+  - 🚀 轻量级：~100MB vs Whisper Large ~1.5GB
+  - 🎯 中文优化：针对中文语音专门训练，效果优于 Whisper
+  - ⏱️ 时间戳：支持字级别时间戳
+  - 💨 速度快：CPU 上也能快速运行
 
-model = AutoModel(
-    model="paraformer-zh",        # 中文 ASR（含 SeACo 增强）
-    vad_model="fsmn-vad",         # 语音活动检测（自动分段长音频）
-    vad_kwargs={"max_single_segment_time": 60000},  # 每段最长 60 秒
-    punc_model="ct-punc",         # 标点恢复
-    disable_update=True,          # 禁用版本检查
-)
+**备选方案**：
 
-result = model.generate(
-    input="audio.wav",
-    batch_size_s=300,             # 动态 batch
-    cache={},                     # 官方推荐参数
-)
+如需使用 Whisper（英文内容推荐）：
+```bash
+python scripts/extract_subtitle.py <视频路径> <输出SRT路径>
 ```
 
-**性能参考**（MacBook Pro M 系列 CPU）：
-
-| 音频时长 | 转录耗时 | RTF | 字幕条数 |
-|---------|---------|-----|---------|
-| 30 秒 | 1.9 秒 | 0.063 | ~8 条 |
-| 10 分钟 | 22 秒 | 0.036 | ~150 条 |
-
-- **RTF（实时率）**：0.035 表示 1 秒音频只需 0.035 秒处理
-- **时间戳**：返回字级时间戳，脚本按标点自动切分为自然句
-- **标点**：ct-punc 模型自动恢复中文标点（句号、问号、逗号等）
-- **对比 Whisper Large**：同样 10 分钟音频 Whisper 需要 7 分钟，FunASR 仅 22 秒
+如需手动控制，可使用原 transcribe_audio.py：
+```bash
+python scripts/transcribe_audio.py <视频路径> <输出SRT路径> [模型] [语言] [设备]
+```
 
 ### 阶段 3: 文稿校正
 
@@ -264,7 +259,8 @@ result = model.generate(
 
 - [download_douyin.py](scripts/download_douyin.py): 抖音视频下载脚本
 - [extract_subtitle_funasr.py](scripts/extract_subtitle_funasr.py): 智能字幕提取脚本（FunASR + RapidOCR）
-- [fetch_bilibili_subtitle.py](scripts/fetch_bilibili_subtitle.py): B站字幕获取脚本（需登录cookies，可选）
+- [extract_subtitle.py](scripts/extract_subtitle.py): 字幕提取脚本（Whisper）
+- [transcribe_audio.py](scripts/transcribe_audio.py): 音频转录脚本
 - [analysis-frameworks.md](references/analysis-frameworks.md): 三个分析框架详解
 
 ## 故障排除
