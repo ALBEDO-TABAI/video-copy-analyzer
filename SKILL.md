@@ -96,6 +96,8 @@ python scripts/download_douyin.py "<抖音链接>" "<输出目录>/<文件名>.m
 
 支持的链接格式：`v.douyin.com/xxx`、`www.douyin.com/video/xxx`、`douyin.com/jingxuan?modal_id=xxx`
 
+抖音网页已对纯 HTTP 解析做风控。脚本会先尝试分享页解析，失败后启动本机 Chrome/Edge/Chromium（无头）提取播放地址，再回退 yt-dlp。需要 Node.js 18+ 以及上述浏览器之一；也可设置 `DOUYIN_BROWSER` 指向浏览器可执行文件。
+
 #### 其他平台（B站、YouTube 等）
 
 使用 yt-dlp：
@@ -293,6 +295,7 @@ python3 -u /tmp/run_funasr.py 2>&1 | tee /tmp/funasr_output.log
 | 文件 | 说明 | 状态 |
 |------|------|------|
 | [download_douyin.py](scripts/download_douyin.py) | 抖音视频下载脚本 | ✅ 可用 |
+| [douyin_browser.mjs](scripts/douyin_browser.mjs) | 本机浏览器提取抖音播放地址 | ✅ 可用 |
 | [extract_subtitle_funasr.py](scripts/extract_subtitle_funasr.py) | 智能字幕提取（FunASR + RapidOCR） | ✅ 可用 |
 | [check_environment.py](scripts/check_environment.py) | 环境依赖检测 | ✅ 可用 |
 | [analysis-frameworks.md](references/analysis-frameworks.md) | 三个分析框架详解 | ✅ 参考 |
@@ -355,3 +358,11 @@ pip install torch torchaudio --upgrade
 
 ### 字幕提取脚本直接运行卡住
 不要直接运行 `python extract_subtitle_funasr.py video.mp4 output.srt`（它会调用 B站 API 获取字幕并因 cookies 问题卡住）。请按照**阶段 2**的说明，直接调用 `extract_with_funasr()` 函数。
+
+### 抖音下载失败 / 无法提取视频数据
+`www.douyin.com` 对无浏览器会话的请求会返回风控页，旧的 `RENDER_DATA` 解析不再可用。确认：
+- 已安装 Node.js（`node -v`）
+- 本机有 Chrome、Edge 或 Chromium
+- 若浏览器不在默认路径，设置 `DOUYIN_BROWSER=/path/to/chrome`
+
+无浏览器时脚本会回退 yt-dlp，但 yt-dlp 同样需要有效游客 cookie，通常也会失败。
